@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "NZEQDatasets"
+authors = [
+    {name = "QuakeCoRE" },
+]
+description = "Manages New Zealand Earthquake datasets for simulations for future events, historical events and even observed datasets"
+readme = "README.md"
+requires-python = ">=3.9"
+dynamic = ["version", "dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools.package-dir]
+cs_api = "cs_api"
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.isort]
+known-first-party = ["cs_dropbox_sync"]
+
