@@ -35,4 +35,4 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 # Add the endpoints
-from cs_api.api import metadata, runs
+from cs_api.api import metadata, runs # noqa
