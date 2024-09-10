@@ -1,5 +1,5 @@
 import pandas as pd
-from dropbox_rclone.dropbox_rclone import dropbox_reading
+from dropbox_rclone import dropbox_reading
 
 from cs_api.server import db
 
@@ -129,7 +129,7 @@ class Run(db.Model):
                             file_path, dbx
                         )
                     else:
-                        dropbox_link = download_links.values[0]
+                        download_link = download_links.values[0]
 
                 file_obj = File(
                     file_name=file_name.split("/")[1],
@@ -151,7 +151,7 @@ class Run(db.Model):
         # Add the sites for each row of the df
         sites = []
         # Only get rows from the site df where the run name column is True
-        site_df = site_df[site_df[run_name] == True]
+        site_df = site_df[site_df[run_name]]
         for index, row in site_df.iterrows():
             site_obj = Site(
                 site_name=index,

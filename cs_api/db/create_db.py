@@ -1,7 +1,10 @@
 import yaml
 
+import pandas as pd
+
+from cs_api.server import db
 from cs_api import constants as const
-from cs_api.db.models import *
+from cs_api.db.models import Run, TectType, GridSpacing, RunType, DataType
 
 DEFAULT_DATA_TYPES = ["BB", "IM", "Source"]
 DEFAULT_RUN_TYPES = ["Cybershake", "Historical"]

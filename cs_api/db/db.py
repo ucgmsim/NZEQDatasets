@@ -1,4 +1,5 @@
-from cs_api.db.models import *
+from cs_api.server import db
+from cs_api.db.models import Run, TectType, GridSpacing, RunType, DataType, Site, Fault
 
 
 def get_data_types():
