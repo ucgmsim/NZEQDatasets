@@ -3,4 +3,4 @@ pyyaml
 flask
 flask_cors
 flask_sqlalchemy
-cs_dropbox_sync @ git+ssh://git@github.com/ucgmsim/cs_dropbox_sync.git
+cs_dropbox_sync @ https://github.com/ucgmsim/cs_dropbox_sync.git
