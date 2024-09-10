@@ -2,3 +2,4 @@ pandas
 pyyaml
 flask
 flask_cors
+flask_sqlalchemy
