@@ -5,7 +5,6 @@ import yaml
 
 from cs_api.server import app
 
-
 if __name__ == "__main__":
     with open(Path(__file__).resolve().parent / "api_config.yaml") as f:
         config = yaml.safe_load(f)

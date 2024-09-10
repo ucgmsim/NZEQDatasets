@@ -1,8 +1,8 @@
 import flask
 from flask_cors import cross_origin
 
-from cs_api import server, utils
 from cs_api import constants as const
+from cs_api import server, utils
 from cs_api.db import db
 
 

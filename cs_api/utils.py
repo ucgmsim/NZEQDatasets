@@ -1,5 +1,5 @@
-from typing import List, Union, Tuple, Iterable, Type, Dict
 from functools import wraps
+from typing import Dict, Iterable, List, Tuple, Type, Union
 
 import flask
 

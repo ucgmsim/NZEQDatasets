@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 from pathlib import Path
 
 import flask
@@ -7,7 +7,6 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 
 from cs_api.custom_log_handler import MultiProcessSafeTimedRotatingFileHandler
-
 
 app = flask.Flask(str(Path(__file__).parent))
 # Enable CORS for the Flask app
@@ -24,7 +23,7 @@ logging.basicConfig(
     level=logging.DEBUG,
     handlers=[TRFhandler],
 )
-logging.getLogger('flask_cors').level = logging.DEBUG
+logging.getLogger("flask_cors").level = logging.DEBUG
 
 TRFhandler.setLevel(logging.DEBUG)
 # To prevent having a same log twice

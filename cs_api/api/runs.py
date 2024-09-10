@@ -5,14 +5,14 @@ from tempfile import TemporaryDirectory
 
 import flask
 import pandas as pd
+from dropbox_rclone.dropbox_rclone.scripts.cs_dropbox_download import download
 from flask_cors import cross_origin
 
-from cs_api import server, utils
 from cs_api import constants as const
+from cs_api import server, utils
 from cs_api.db import db as cs_db
-from cs_api.server import db
 from cs_api.db.models import Run
-from dropbox_rclone.dropbox_rclone.scripts.cs_dropbox_download import download
+from cs_api.server import db
 
 
 @server.app.route(const.GET_RUN_INFO, methods=["GET"])
@@ -185,6 +185,7 @@ def add_run():
 
         return flask.jsonify({"success": "Correct secret key and added run to db"}), 200
 
+
 @server.app.route(const.ADD_LIVE_RUN, methods=["POST"])
 @cross_origin(expose_headers=["Content-Type", "Authorization"])
 @utils.endpoint_exception_handling(server.app)
@@ -193,23 +194,18 @@ def add_live_run():
     Adds a live run to the database
     """
     server.app.logger.info(f"Received request at {const.ADD_LIVE_RUN}")
-    (
-        run_name,
-        region,
-        run_type,
-        tectonic_types,
-        grid_spacing,
-        fault_info
-    ) = utils.get_check_keys(
-        flask.request.args,
-        (
-            "run_name",
-            "region",
-            "run_type",
-            "tectonic_types",
-            "grid_spacing",
-            "fault_info",
-        ),
+    (run_name, region, run_type, tectonic_types, grid_spacing, fault_info) = (
+        utils.get_check_keys(
+            flask.request.args,
+            (
+                "run_name",
+                "region",
+                "run_type",
+                "tectonic_types",
+                "grid_spacing",
+                "fault_info",
+            ),
+        )
     )
     tectonic_types = tectonic_types.split(",")
 
@@ -222,7 +218,9 @@ def add_live_run():
     }
 
     # Create the run object
-    run_obj = Run.create_live_run(run_name=run_name, run_info=run_info, fault_info=fault_info)
+    run_obj = Run.create_live_run(
+        run_name=run_name, run_info=run_info, fault_info=fault_info
+    )
     db.session.add(run_obj)
     db.session.commit()
 
