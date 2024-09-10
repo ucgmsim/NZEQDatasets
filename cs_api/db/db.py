@@ -1,5 +1,3 @@
-from cs_api.server import db
-
 from cs_api.db.models import *
 
 
