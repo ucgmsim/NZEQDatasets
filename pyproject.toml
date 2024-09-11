@@ -22,5 +22,5 @@ cs_api = "cs_api"
 convention = "numpy"
 
 [tool.ruff.lint.isort]
-known-first-party = ["source_modelling", "qcore", "workflow", "pygmt_helper"]
+known-first-party = ["cs_dropbox_sync"]
 
