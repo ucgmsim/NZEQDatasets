@@ -20,11 +20,11 @@ const Interests = ({setInterest}) => {
   // Get Available Sources on page load
   useEffect(() => {
     if (availableSources.length === 0) {
-      fetch(CONSTANTS.CS_API_URL + CONSTANTS.GET_UNIQUE_FAULTS_ENDPOINT, {
+      fetch(CONSTANTS.CS_API_URL + CONSTANTS.GET_UNIQUE_EVENTS_ENDPOINT, {
         method: "GET",
       }).then(async (response) => {
         const responseData = await response.json();
-        // Set Available Faults for the Select Dropdown
+        // Set Available Events for the Select Dropdown
         let tempOptionArray = [];
         for (const value of Object.values(responseData)) {
           tempOptionArray.push({ value: value, label: value });

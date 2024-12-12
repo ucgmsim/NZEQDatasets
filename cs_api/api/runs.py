@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -38,27 +39,27 @@ def get_full_run_info():
         )
         run_info[run_name]["card_info"]["grid_spacing"] = run.grid_spacing.grid_spacing
         run_info[run_name]["card_info"]["run_type"] = run.type.type
-        run_info[run_name]["card_info"]["n_faults"] = len(run.faults)
+        run_info[run_name]["card_info"]["n_events"] = len(run.events)
 
         # Add data types available such as BB, IM, Source
         run_info[run_name]["data_types"] = [
             data_type.data_type for data_type in run.data_types
         ]
 
-        # Add fault info such as fault name and associated files
-        run_info[run_name]["faults"] = dict()
-        for fault in run.faults:
-            run_info[run_name]["faults"][fault.fault_name] = dict()
-            for file in fault.files:
+        # Add event info such as event name and associated files
+        run_info[run_name]["events"] = dict()
+        for event in run.events:
+            run_info[run_name]["events"][event.event_name] = dict()
+            for file in event.files:
                 # Add file info such as data type, file size, and download link
-                run_info[run_name]["faults"][fault.fault_name][file.file_name] = dict()
-                run_info[run_name]["faults"][fault.fault_name][file.file_name][
+                run_info[run_name]["events"][event.event_name][file.file_name] = dict()
+                run_info[run_name]["events"][event.event_name][file.file_name][
                     "data_type"
                 ] = file.data_type.data_type
-                run_info[run_name]["faults"][fault.fault_name][file.file_name][
+                run_info[run_name]["events"][event.event_name][file.file_name][
                     "file_size"
                 ] = file.file_size
-                run_info[run_name]["faults"][fault.fault_name][file.file_name][
+                run_info[run_name]["events"][event.event_name][file.file_name][
                     "download_link"
                 ] = file.download_link
         run_infos.append(run_info)
@@ -82,8 +83,8 @@ def get_runs_from_interests():
     available_runs = cs_db.get_available_runs()
     for run in available_runs:
         if filter_by == "sources":
-            for fault in run.faults:
-                if fault.fault_name in filter_list:
+            for event in run.events:
+                if event.fault_name in filter_list:
                     filtered_runs.append(run.run_name)
                     break
         elif filter_by == "sites":
@@ -155,7 +156,7 @@ def add_run():
             force_untar=True,
         )
 
-        # For each fault load the 1st realisation and get the list of stations
+        # For each event load the 1st realisation and get the list of stations
         for fault_dir in temp_path.iterdir():
             if fault_dir.is_dir():
                 # Find the 1st realisation under any folder directory under fault_dir using glob
@@ -184,7 +185,6 @@ def add_run():
 
         return flask.jsonify({"success": "Correct secret key and added run to db"}), 200
 
-
 @server.app.route(const.ADD_LIVE_RUN, methods=["POST"])
 @cross_origin(expose_headers=["Content-Type", "Authorization"])
 @utils.endpoint_exception_handling(server.app)
@@ -193,18 +193,23 @@ def add_live_run():
     Adds a live run to the database
     """
     server.app.logger.info(f"Received request at {const.ADD_LIVE_RUN}")
-    (run_name, region, run_type, tectonic_types, grid_spacing, fault_info) = (
-        utils.get_check_keys(
-            flask.request.args,
-            (
-                "run_name",
-                "region",
-                "run_type",
-                "tectonic_types",
-                "grid_spacing",
-                "fault_info",
-            ),
-        )
+    (
+        run_name,
+        region,
+        run_type,
+        tectonic_types,
+        grid_spacing,
+        events
+    ) = utils.get_check_keys(
+        flask.request.args,
+        (
+            "run_name",
+            "region",
+            "run_type",
+            "tectonic_types",
+            "grid_spacing",
+            ("events", json.loads),
+        ),
     )
     tectonic_types = tectonic_types.split(",")
 
@@ -214,12 +219,11 @@ def add_live_run():
         "grid": grid_spacing,
         "tectonic_types": tectonic_types,
         "type": run_type,
+        "events": events,
     }
 
     # Create the run object
-    run_obj = Run.create_live_run(
-        run_name=run_name, run_info=run_info, fault_info=fault_info
-    )
+    run_obj = Run(run_name=run_name, run_info=run_info, live_run=True)
     db.session.add(run_obj)
     db.session.commit()
 

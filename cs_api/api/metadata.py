@@ -44,7 +44,7 @@ def get_run_types():
 @utils.endpoint_exception_handling(server.app)
 def get_all_unique_faults():
     """
-    Gets all the unique faults from every run on dropbox
+    Gets all the unique events from every run on dropbox
     """
     server.app.logger.info(f"Received request at {const.GET_UNIQUE_FAULTS}")
     unique_faults = db.get_all_unique_faults()

@@ -47,13 +47,13 @@ for data_type in DEFAULT_DATA_TYPES:
     db.session.add(DataType(data_type=data_type))
 
 
-# Add the runs and all their fault information to the database
-for run, run_info in run_metadata.items():
-    print(f"Adding run {run} to the database")
-    run_obj = Run(
-        run_name=run, run_info=run_info, site_df=site_df, dropbox_df=dropbox_df
-    )
-    db.session.add(run_obj)
+# Add the runs and all their event information to the database
+# for run, run_info in run_metadata.items():
+#     print(f"Adding run {run} to the database")
+#     run_obj = Run(
+#         run_name=run, run_info=run_info, site_df=site_df, dropbox_df=dropbox_df
+#     )
+#     db.session.add(run_obj)
 
 db.session.commit()
 print("Finished adding runs to the database")

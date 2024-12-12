@@ -18,8 +18,8 @@ const RunCard = ({ key, runData, setRun, runName, active }) => {
         <Card.Title className="run-card-title">{runData["card_info"]["run_type"]}</Card.Title>
         <Card.Title className="run-card-sub-title">{runName}</Card.Title>
           <Card.Text className="run-card-info-text">
-            <b>Number of Faults:</b>{" "}
-            {runData["card_info"]["n_faults"]}
+            <b>Number of Events:</b>{" "}
+            {runData["card_info"]["n_events"]}
             <br />
             <b>Region:</b> {runData["card_info"]["region"]}
             <br />

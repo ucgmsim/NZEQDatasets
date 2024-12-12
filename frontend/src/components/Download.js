@@ -11,8 +11,8 @@ const Download = ({openPopup, selectedRunData, selectedRun, goBack}) => {
   const [downloadAvailable, setDownloadAvailable] = useState(false);
   const [availableDataTypes, setAvailableDataTypes] = useState([]);
   const [selectedDataTypes, setSelectedDataTypes] = useState([]);
-  const [availableFaults, setAvailableFaults] = useState([]);
-  const [selectedFaults, setSelectedFaults] = useState([]);
+  const [availableEvents, setAvailableEvents] = useState([]);
+  const [selectedEvents, setSelectedEvents] = useState([]);
   const [downloadLinks, setDownloadLinks] = useState([]);
   const [selectedTotalSize, setSelectedTotalSize] = useState(0);
   const textAreaRef = useRef(null);
@@ -27,14 +27,14 @@ const Download = ({openPopup, selectedRunData, selectedRun, goBack}) => {
       tempOptionArray.push({value: value, label: value});
     }
     setAvailableDataTypes(tempOptionArray);
-    // Set Available Faults Array
+    // Set Available Events Array
     tempOptionArray = [];
     for (const key of Object.keys(
-      selectedRunData["faults"]
+      selectedRunData["events"]
     )) {
       tempOptionArray.push({value: key, label: key});
     }
-    setAvailableFaults(tempOptionArray);
+    setAvailableEvents(tempOptionArray);
   }, []);
 
   const getSelectedFiles = () => {
@@ -43,14 +43,14 @@ const Download = ({openPopup, selectedRunData, selectedRun, goBack}) => {
     const selectedDataTypeStrings = selectedDataTypes.map((item) => item.value);
 
     let files = [];
-    // Loop over the selected Faults
-    for (const fault of selectedFaults) {
-      // Find the fault info in the selected run data
-      const faultInfo = selectedRunData["faults"][fault.value];
-      // Loop over each file in the faultInfo and check if it matches the selected data types
-      for (const file of Object.keys(faultInfo)) {
+    // Loop over the selected Events
+    for (const event of selectedEvents) {
+      // Find the event info in the selected run data
+      const eventInfo = selectedRunData["events"][event.value];
+      // Loop over each file in the eventInfo and check if it matches the selected data types
+      for (const file of Object.keys(eventInfo)) {
         if (selectedDataTypeStrings.some((item) => file.includes(item))) {
-          files.push(faultInfo[file]);
+          files.push(eventInfo[file]);
         }
       }
     }
@@ -80,9 +80,9 @@ const Download = ({openPopup, selectedRunData, selectedRun, goBack}) => {
     }
   }
 
-  // Updates changes to file size shown when data types and faults change
+  // Updates changes to file size shown when data types and events change
   useEffect(() => {
-    if (selectedDataTypes.length > 0 && selectedFaults.length > 0) {
+    if (selectedDataTypes.length > 0 && selectedEvents.length > 0) {
       let files = getSelectedFiles();
       let totalBytes = 0;
       for (const file of files) {
@@ -94,7 +94,7 @@ const Download = ({openPopup, selectedRunData, selectedRun, goBack}) => {
       setDownloadAvailable(false);
       setSelectedTotalSize(0);
     }
-  }, [selectedDataTypes, selectedFaults]);
+  }, [selectedDataTypes, selectedEvents]);
 
   const formatBytes = (bytes) => {
     if (bytes === 0) {
@@ -124,13 +124,13 @@ const Download = ({openPopup, selectedRunData, selectedRun, goBack}) => {
           ></Select>
           <MultiSelect
             className="download-select-box"
-            options={availableFaults}
-            isDisabled={availableFaults.length === 0}
-            value={selectedFaults}
-            onChange={(e) => setSelectedFaults(e)}
+            options={availableEvents}
+            isDisabled={availableEvents.length === 0}
+            value={selectedEvents}
+            onChange={(e) => setSelectedEvents(e)}
             overrideStrings={{
-              "allItemsAreSelected": "All faults",
-              "selectSomeItems": "Select Faults"
+              "allItemsAreSelected": "All events",
+              "selectSomeItems": "Select Events"
             }}
           />
         </div>

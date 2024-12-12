@@ -15,6 +15,7 @@ ADD_LIVE_RUN = "/runs/add_live"
 
 # Step endpoints
 ADD_JOB = "/steps/add_job"
+GET_JOBS_CSV = "/steps/jobs_csv"
 CHECK_STEPS = "/steps/check"
 CHECK_LINKS = "/steps/check_links"
 
