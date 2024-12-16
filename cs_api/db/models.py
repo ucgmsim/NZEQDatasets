@@ -1,373 +1,155 @@
-import enum
-from typing import Optional
-
-import pandas as pd
-from dropbox_rclone import dropbox_reading
-from sqlalchemy import Enum, Interval
-
 from cs_api.server import db
 
-run_tecttypes = db.Table(
-    "run_tecttypes",
-    db.Column("run_id", db.Integer, db.ForeignKey("runs.id"), primary_key=True),
-    db.Column(
-        "tecttype_id", db.Integer, db.ForeignKey("tect_types.id"), primary_key=True
-    ),
-)
+class Dataset(db.Model):
+    """
+    Base model for Datasets.
+    """
+    __tablename__ = "datasets"
 
-
-run_datatypes = db.Table(
-    "run_data_types",
-    db.Column("run_id", db.Integer, db.ForeignKey("runs.id"), primary_key=True),
-    db.Column(
-        "datatype_id", db.Integer, db.ForeignKey("data_types.id"), primary_key=True
-    ),
-)
-
-run_events = db.Table(
-    "run_events",
-    db.Column("run_id", db.Integer, db.ForeignKey("runs.id"), primary_key=True),
-    db.Column("event_id", db.Integer, db.ForeignKey("events.id"), primary_key=True),
-)
-
-event_files = db.Table(
-    "event_files",
-    db.Column("event_id", db.Integer, db.ForeignKey("events.id"), primary_key=True),
-    db.Column("file_id", db.Integer, db.ForeignKey("files.id"), primary_key=True),
-)
-
-site_runs = db.Table(
-    "site_runs",
-    db.Column("site_id", db.Integer, db.ForeignKey("sites.id"), primary_key=True),
-    db.Column("run_id", db.Integer, db.ForeignKey("runs.id"), primary_key=True),
-)
-
-
-class Run(db.Model):
-    __tablename__ = "runs"
     id = db.Column(db.Integer, primary_key=True)
-    run_name = db.Column(
-        db.String(100),
-        unique=True,
-    )
-    type_id = db.Column(db.Integer, db.ForeignKey("run_types.id"))
-    type = db.relationship("RunType")
+    name = db.Column(db.String(255), nullable=False)
+    type = db.Column(db.String(50), nullable=False)
+    author = db.Column(db.String(255), nullable=True)
 
-    n_events = db.Column(db.Integer)
-    region = db.Column(db.String(100))
+    # Relationships
+    display_metadata = db.relationship("DatasetMetadata", back_populates="dataset", cascade="all, delete-orphan")
+    sites = db.relationship("Site", back_populates="dataset", cascade="all, delete-orphan")
+    events = db.relationship("Event", back_populates="dataset", cascade="all, delete-orphan")
+    data_types = db.relationship("DataType", back_populates="dataset", cascade="all, delete-orphan")
 
-    grid_spacing_id = db.Column(db.Integer, db.ForeignKey("grid_spacings.id"))
-    grid_spacing = db.relationship("GridSpacing")
+    def to_json(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "type": self.type,
+            "author": self.author,
+            "display_metadata": {meta.key: meta.value for meta in self.display_metadata},
+            "sites": [site.to_json() for site in self.sites],
+            "events": [event.to_json() for event in self.events],
+            "data_types": [data_type.to_json() for data_type in self.data_types]
+        }
 
-    tect_types = db.relationship("TectType", secondary=run_tecttypes, backref="runs")
-    data_types = db.relationship("DataType", secondary=run_datatypes, backref="runs")
-    events = db.relationship("Event", secondary=run_events, backref="runs")
-    sites = db.relationship("Site", secondary=site_runs, backref="runs")
-    steps = db.relationship("StepMetadata", back_populates="run")
 
-    def __init__(
-        self,
-        run_name: str,
-        run_info: dict,
-        site_df: Optional[pd.DataFrame] = None,
-        dropbox_df: Optional[pd.DataFrame] = None,
-        live_run: bool = False,
-    ):
-        """
-        Create a run object from a run name from extracting the data from dropbox. Or initialise a run object
-        that is currently live and still being run on an HPC.
+class DatasetMetadata(db.Model):
+    """
+    Model for Metadata associated with a Dataset.
+    """
+    __tablename__ = "dataset_metadata"
 
-        Parameters
-        ----------
-        run_name : str
-            Name of the run
-        run_info : dict
-            Dictionary of run metadata information
-            Should include region, grid, type, tectonic_types and events with realisation numbers if the run is live
-        site_df : pd.DataFrame
-            DataFrame of site information for this specific run event
-        dropbox_df : pd.DataFrame
-            DataFrame of stored links for downloading to save time on the dropbox API
-            Can be None and if not found in the df then it will be extracted from the API
-        live_run : bool, optional default=False
-            If the run is a live run, ignores creating all the links and files
-        """
-        if live_run:
-            events = run_info["events"]
-        else:
-            events = dropbox_reading.get_run_info(run_name)
-            dbx = dropbox_reading.get_dropbox_api_object()
-        self.run_name = run_name
-        self.n_events = len(events)
-        self.region = run_info["region"]
-        self.grid_spacing = GridSpacing.query.filter_by(
-            grid_spacing=run_info["grid"]
-        ).first()
-        self.type = RunType.query.filter_by(type=str(run_info["type"])).first()
-        self.tect_types = [
-            TectType.query.filter_by(tect_type=tect_type).first()
-            for tect_type in run_info["tectonic_types"]
-        ]
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(255), nullable=False)
+    value = db.Column(db.String(255), nullable=False)
 
-        if live_run:
-            # Add the events and Realisations for the run
-            run_events_list = []
-            run_realisations_list = []
-            for event, n_rels in events.items():
-                event_obj = Event(event_name=event, run=self)
-                for rel in range(1, n_rels + 1):
-                    realisation_obj = Realisation(realisation_number=rel, event=event_obj)
-                    run_realisations_list.append(realisation_obj)
-                    db.session.add(realisation_obj)
-                event_obj.realisations = run_realisations_list
-                run_events_list.append(event_obj)
-                db.session.add(event_obj)
-            self.events = run_events_list
-        else:
-            # Create each event for the run
-            data_types_found = set()
-            run_events_list = []
-            for event, files in events.items():
-                event_files_list = []
-                for file_name, file_size in files.items():
-                    data_type_str = file_name.split(".")[0].split("_")[1]
-                    file_data_type = DataType.query.filter_by(
-                        data_type=data_type_str
-                    ).first()
-                    data_types_found.add(file_data_type)
-
-                    # Try find the dropbox link from the dropbox df
-                    # If None or not found then get the link from the dropbox API
-                    if dropbox_df is None:
-                        file_path = dropbox_reading.get_full_dropbox_path(
-                            run_name, file_name.split("/")[1]
-                        )
-                        download_link = dropbox_reading.get_download_link(file_path, dbx)
-                    else:
-                        download_links = dropbox_df.loc[
-                            (dropbox_df["run_name"] == run_name)
-                            & (dropbox_df["event_name"] == event)
-                            & (dropbox_df["file_name"] == file_name.split("/")[1])
-                        ]["dropbox_link"]
-                        if len(download_links) == 0:
-                            file_path = dropbox_reading.get_full_dropbox_path(
-                                run_name, file_name.split("/")[1]
-                            )
-                            download_link = dropbox_reading.get_download_link(
-                                file_path, dbx
-                            )
-                        else:
-                            download_link = download_links.values[0]
-
-                    file_obj = File(
-                        file_name=file_name.split("/")[1],
-                        download_link=download_link,
-                        file_size=file_size,
-                        data_type=file_data_type,
-                    )
-                    event_files_list.append(file_obj)
-                    db.session.add(file_obj)
-                event_obj = Event(
-                    event_name=event,
-                    run=self,
-                    files=event_files_list,
-                )
-                run_events_list.append(event_obj)
-                db.session.add(event_obj)
-            self.data_types = list(data_types_found)
-            self.events = run_events_list
-        if site_df is not None:
-            # Add the sites for each row of the df
-            sites = []
-            # Only get rows from the site df where the run name column is True
-            site_df = site_df[site_df[run_name]]
-            for index, row in site_df.iterrows():
-                site_obj = Site(
-                    site_name=index,
-                    lat=row["lat"],
-                    lon=row["lon"],
-                    vs30=row["vs30"],
-                    z1p0=row["z1p0"],
-                    z2p5=row["z2p5"],
-                    run=self,
-                )
-                sites.append(site_obj)
-                db.session.add(site_obj)
-            self.sites = sites
+    # Foreign keys
+    dataset_id = db.Column(db.Integer, db.ForeignKey("datasets.id"), nullable=False)
+    dataset = db.relationship("Dataset", back_populates="display_metadata")
 
 
 class Site(db.Model):
+    """
+    Model for the sites table in the database.
+    """
     __tablename__ = "sites"
+
     id = db.Column(db.Integer, primary_key=True)
-    site_name = db.Column(
-        db.String(100),
-    )
-    lat = db.Column(db.Float)
-    lon = db.Column(db.Float)
-    vs30 = db.Column(db.Float)
-    z1p0 = db.Column(db.Float)
-    z2p5 = db.Column(db.Float)
-    run_id = db.Column(db.Integer, db.ForeignKey("runs.id"))
-    run = db.relationship("Run")
+    name = db.Column(db.String(255), nullable=False)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
 
-    def __init__(
-        self,
-        site_name: str,
-        lat: float,
-        lon: float,
-        vs30: float,
-        z1p0: float,
-        z2p5: float,
-        run: Run,
-    ):
-        """
-        Create a site object from a site name
-        from extracting the data from dropbox
+    # Foreign keys
+    dataset_id = db.Column(db.Integer, db.ForeignKey("datasets.id"), nullable=False)
+    dataset = db.relationship("Dataset", back_populates="sites")
 
-        Parameters
-        ----------
-        site_name : str
-            Name of the site
-        lat : float
-            Latitude of the site
-        lon : float
-            Longitude of the site
-        vs30 : float
-            Vs30 value of the site
-        z1p0 : float
-            Z1.0 value of the site
-        z2p5 : float
-            Z2.5 value of the site
-        run : Run
-            Run object that the site is associated with
-        """
-        self.site_name = site_name
-        self.lat = lat
-        self.lon = lon
-        self.vs30 = vs30
-        self.z1p0 = z1p0
-        self.z2p5 = z2p5
-        self.run = run
+    def to_json(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "latitude": self.latitude,
+            "longitude": self.longitude
+        }
 
 
 class Event(db.Model):
+    """
+    Model for the events table in the database.
+    """
     __tablename__ = "events"
+
     id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    hyp_latitude = db.Column(db.Float, nullable=True)
+    hyp_longitude = db.Column(db.Float, nullable=True)
+    corner0_latitude = db.Column(db.Float, nullable=True)
+    corner0_longitude = db.Column(db.Float, nullable=True)
+    corner1_latitude = db.Column(db.Float, nullable=True)
+    corner1_longitude = db.Column(db.Float, nullable=True)
+    corner2_latitude = db.Column(db.Float, nullable=True)
+    corner2_longitude = db.Column(db.Float, nullable=True)
+    corner3_latitude = db.Column(db.Float, nullable=True)
+    corner3_longitude = db.Column(db.Float, nullable=True)
 
-    event_name = db.Column(
-        db.String(100),
-    )
+    # Foreign keys
+    dataset_id = db.Column(db.Integer, db.ForeignKey("datasets.id"), nullable=False)
+    dataset = db.relationship("Dataset", back_populates="events")
 
-    run_id = db.Column(db.Integer, db.ForeignKey("runs.id"))
-    run = db.relationship("Run")
-
-    files = db.relationship("File", secondary=event_files, backref="events")
-    realisations = db.relationship("Realisation", back_populates="event")
-    steps = db.relationship("StepMetadata", back_populates="event")
-
-
-class File(db.Model):
-    __tablename__ = "files"
-    id = db.Column(db.Integer, primary_key=True)
-
-    file_name = db.Column(
-        db.String(100),
-    )
-    download_link = db.Column(
-        db.String(255),
-    )
-    file_size = db.Column(
-        db.Integer,
-    )
-
-    data_type_id = db.Column(db.Integer, db.ForeignKey("data_types.id"))
-    data_type = db.relationship("DataType")
-
-
-class TectType(db.Model):
-    __tablename__ = "tect_types"
-    id = db.Column(db.Integer, primary_key=True)
-    tect_type = db.Column(db.String(100), unique=True)
+    def to_json(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "hypocenter": {
+                "latitude": self.hyp_latitude,
+                "longitude": self.hyp_longitude
+            },
+            "corners": [
+                {"latitude": self.corner0_latitude, "longitude": self.corner0_longitude},
+                {"latitude": self.corner1_latitude, "longitude": self.corner1_longitude},
+                {"latitude": self.corner2_latitude, "longitude": self.corner2_longitude},
+                {"latitude": self.corner3_latitude, "longitude": self.corner3_longitude}
+            ]
+        }
 
 
 class DataType(db.Model):
+    """
+    Model for the data_types table in the database.
+    """
     __tablename__ = "data_types"
+
     id = db.Column(db.Integer, primary_key=True)
-    data_type = db.Column(db.String(100), unique=True)
+    name = db.Column(db.String(255), nullable=False)
+    files = db.relationship("File", back_populates="data_type", cascade="all, delete-orphan")
+
+    # Foreign keys
+    dataset_id = db.Column(db.Integer, db.ForeignKey("datasets.id"), nullable=False)
+    dataset = db.relationship("Dataset", back_populates="data_types")
+
+    def to_json(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "files": [file.to_json() for file in self.files]
+        }
 
 
-class GridSpacing(db.Model):
-    __tablename__ = "grid_spacings"
+class File(db.Model):
+    """
+    Model for the files table in the database.
+    """
+    __tablename__ = "files"
+
     id = db.Column(db.Integer, primary_key=True)
-    grid_spacing = db.Column(db.String(100), unique=True)
+    name = db.Column(db.String(255), nullable=False)
+    dropbox_link = db.Column(db.String(255), nullable=False)
+    file_size = db.Column(db.Float, nullable=False)
 
+    # Foreign keys
+    data_type_id = db.Column(db.Integer, db.ForeignKey("data_types.id"), nullable=False)
+    data_type = db.relationship("DataType", back_populates="files")
 
-class RunType(db.Model):
-    __tablename__ = "run_types"
-    id = db.Column(db.Integer, primary_key=True)
-    type = db.Column(db.String(100), unique=True)
-
-class RunTypeEnum(enum.Enum):
-    resubmission = "resubmission"
-    checkpointed = "checkpointed"
-    initial = "initial"
-
-class JobMetadata(db.Model):
-    __tablename__ = "job_metadata"
-    job_id = db.Column(db.Integer, primary_key=True)
-    time_submitted = db.Column(db.DateTime, nullable=False)
-    time_started = db.Column(db.DateTime, nullable=True)
-    time_ended = db.Column(db.DateTime, nullable=True)
-    ncpus = db.Column(db.Integer, nullable=False)
-    runtime = db.Column(Interval, nullable=False)
-    type = db.Column(Enum(RunTypeEnum), nullable=False)
-    order = db.Column(db.Integer, nullable=False)
-    step_metadata_id = db.Column(db.Integer, db.ForeignKey("step_metadata.id"))
-    step_metadata = db.relationship("StepMetadata", back_populates="jobs")
-
-    def __init__(self, job_id, time_submitted, time_started, time_ended, ncpus, runtime, type, order, step_metadata):
-        self.job_id = job_id
-        self.time_submitted = time_submitted
-        self.time_started = time_started
-        self.time_ended = time_ended
-        self.ncpus = ncpus
-        self.runtime = runtime
-        self.type = type
-        self.order = order
-        self.step_metadata = step_metadata
-
-
-class StepMetadata(db.Model):
-    __tablename__ = "step_metadata"
-    id = db.Column(db.Integer, primary_key=True)
-    workflow_step = db.Column(db.String(50), nullable=False)
-
-    run_id = db.Column(db.Integer, db.ForeignKey("runs.id"), nullable=True)
-    run = db.relationship("Run", back_populates="steps")
-
-    event_id = db.Column(db.Integer, db.ForeignKey("events.id"), nullable=True)
-    event = db.relationship("Event", back_populates="steps")
-
-    realisation_id = db.Column(db.Integer, db.ForeignKey("realisations.id"), nullable=True)
-    realisation = db.relationship("Realisation", back_populates="steps")
-
-    jobs = db.relationship("JobMetadata", back_populates="step_metadata")
-
-    def __init__(self, id, workflow_step, run=None, event=None, realisation=None):
-        self.id = id
-        self.workflow_step = workflow_step
-        self.run = run
-        self.event = event
-        self.realisation = realisation
-
-class Realisation(db.Model):
-    __tablename__ = "realisations"
-    id = db.Column(db.Integer, primary_key=True)
-    realisation_number = db.Column(db.Integer, nullable=False)
-    event_id = db.Column(db.Integer, db.ForeignKey("events.id"))
-    event = db.relationship("Event", back_populates="realisations")
-    steps = db.relationship("StepMetadata", back_populates="realisation")
-
-    def __init__(self, realisation_number, event):
-        self.realisation_number = realisation_number
-        self.event = event
+    def to_json(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "dropbox_link": self.dropbox_link,
+            "file_size": self.file_size
+        }

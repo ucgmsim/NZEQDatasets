@@ -6,48 +6,26 @@ from cs_api import server, utils
 from cs_api.db import db
 
 
-@server.app.route(const.GET_TECTONIC_TYPES, methods=["GET"])
+@server.app.route(const.GET_DATASET_TYPES, methods=["GET"])
 @cross_origin(expose_headers=["Content-Type", "Authorization"])
 @utils.endpoint_exception_handling(server.app)
-def get_tectonic_types():
+def get_dataset_types():
     """
-    Gets the tectonic types from the db
+    Gets the possible dataset types from the db
     """
-    server.app.logger.info(f"Received request at {const.GET_TECTONIC_TYPES}")
-    return flask.jsonify(db.get_tect_types())
+    server.app.logger.info(f"Received request at {const.GET_DATASET_TYPES}")
+    return flask.jsonify(db.get_dataset_types())
 
 
-@server.app.route(const.GET_GRID_SPACING, methods=["GET"])
+@server.app.route(const.GET_UNIQUE_EVENTS, methods=["GET"])
 @cross_origin(expose_headers=["Content-Type", "Authorization"])
 @utils.endpoint_exception_handling(server.app)
-def get_grid_spacing():
-    """
-    Gets the grid spacing from the db
-    """
-    server.app.logger.info(f"Received request at {const.GET_GRID_SPACING}")
-    return flask.jsonify(db.get_grid_spacings())
-
-
-@server.app.route(const.GET_RUN_TYPES, methods=["GET"])
-@cross_origin(expose_headers=["Content-Type", "Authorization"])
-@utils.endpoint_exception_handling(server.app)
-def get_run_types():
-    """
-    Gets the possible run types from the db
-    """
-    server.app.logger.info(f"Received request at {const.GET_RUN_TYPES}")
-    return flask.jsonify(db.get_run_types())
-
-
-@server.app.route(const.GET_UNIQUE_FAULTS, methods=["GET"])
-@cross_origin(expose_headers=["Content-Type", "Authorization"])
-@utils.endpoint_exception_handling(server.app)
-def get_all_unique_faults():
+def get_all_unique_events():
     """
     Gets all the unique events from every run on dropbox
     """
-    server.app.logger.info(f"Received request at {const.GET_UNIQUE_FAULTS}")
-    unique_faults = db.get_all_unique_faults()
+    server.app.logger.info(f"Received request at {const.GET_UNIQUE_EVENTS}")
+    unique_faults = db.get_all_unique_events()
     return flask.jsonify(unique_faults)
 
 

@@ -1,111 +1,81 @@
-import React, {useEffect, useState, memo, useRef} from "react";
+import React, { useEffect, useState, memo, useRef } from "react";
 import Select from "react-select";
-
-import {MultiSelect} from "react-multi-select-component";
-
 import "assets/Download.css";
 import "assets/Popup.css";
-import {Button} from "react-bootstrap";
+import { Button } from "react-bootstrap";
 
-const Download = ({openPopup, selectedRunData, selectedRun, goBack}) => {
+const Download = ({ openPopup, selectedRunData, goBack }) => {
   const [downloadAvailable, setDownloadAvailable] = useState(false);
   const [availableDataTypes, setAvailableDataTypes] = useState([]);
-  const [selectedDataTypes, setSelectedDataTypes] = useState([]);
-  const [availableEvents, setAvailableEvents] = useState([]);
-  const [selectedEvents, setSelectedEvents] = useState([]);
+  const [selectedDataType, setSelectedDataType] = useState(null);
+  const [availableFiles, setAvailableFiles] = useState([]);
+  const [selectedFiles, setSelectedFiles] = useState([]);
   const [downloadLinks, setDownloadLinks] = useState([]);
   const [selectedTotalSize, setSelectedTotalSize] = useState(0);
   const textAreaRef = useRef(null);
 
-  // Get Data Types filter on page load
+  // Initialize Available Data Types Dropdown
   useEffect(() => {
-    // Set Available Data Types Select Dropdown
-    let tempOptionArray = [];
-    for (const value of Object.values(
-      selectedRunData["data_types"]
-    )) {
-      tempOptionArray.push({value: value, label: value});
-    }
-    setAvailableDataTypes(tempOptionArray);
-    // Set Available Events Array
-    tempOptionArray = [];
-    for (const key of Object.keys(
-      selectedRunData["events"]
-    )) {
-      tempOptionArray.push({value: key, label: key});
-    }
-    setAvailableEvents(tempOptionArray);
-  }, []);
+    const tempDataTypes = selectedRunData["data_types"].map((type) => ({
+      value: type.id,
+      label: type.name,
+      files: type.files, // Attach files for easier access later
+    }));
+    setAvailableDataTypes(tempDataTypes);
+  }, [selectedRunData]);
 
-  const getSelectedFiles = () => {
-    // Gets the files that are selected based on the selected preferences
-    // Get the strings of the selected data types
-    const selectedDataTypeStrings = selectedDataTypes.map((item) => item.value);
-
-    let files = [];
-    // Loop over the selected Events
-    for (const event of selectedEvents) {
-      // Find the event info in the selected run data
-      const eventInfo = selectedRunData["events"][event.value];
-      // Loop over each file in the eventInfo and check if it matches the selected data types
-      for (const file of Object.keys(eventInfo)) {
-        if (selectedDataTypeStrings.some((item) => file.includes(item))) {
-          files.push(eventInfo[file]);
-        }
-      }
-    }
-    return files;
-  };
-
-  async function downloadFiles() {
-    // Downloads the files selected
-    let files = getSelectedFiles();
-    const totalFiles = files.length;
-
-    if (totalFiles === 1) {
-      setDownloadLinks([]);
-      const link = document.createElement("a");
-      // Just download the single file by itself
-      link.href = files[0]["download_link"];
-      link.download =
-        selectedRun +
-        "_" +
-        files[0]["download_link"].split("/").pop().split("?").shift();
-      link.click();
-      link.remove();
+  // Update Available Files Dropdown when Data Type is Selected
+  useEffect(() => {
+    if (selectedDataType) {
+      setAvailableFiles(
+        selectedDataType.files.map((file) => ({
+          value: file.id,
+          label: file.name,
+          file_size: file.file_size,
+          download_link: file.dropbox_link,
+        }))
+      );
     } else {
-      // Multiple files, but BB is one of them, so download them all separately using a download manager
-      setDownloadLinks(files.map((file) => file.download_link));
-      openPopup();
+      setAvailableFiles([]);
+      setSelectedFiles([]);
     }
-  }
+  }, [selectedDataType]);
 
-  // Updates changes to file size shown when data types and events change
+  // Update Total Size and Download Availability
   useEffect(() => {
-    if (selectedDataTypes.length > 0 && selectedEvents.length > 0) {
-      let files = getSelectedFiles();
-      let totalBytes = 0;
-      for (const file of files) {
-        totalBytes += file["file_size"];
-      }
+    if (selectedFiles.length > 0) {
+      const totalBytes = selectedFiles.reduce(
+        (sum, file) => sum + file.file_size,
+        0
+      );
       setSelectedTotalSize(totalBytes);
       setDownloadAvailable(true);
     } else {
-      setDownloadAvailable(false);
       setSelectedTotalSize(0);
+      setDownloadAvailable(false);
     }
-  }, [selectedDataTypes, selectedEvents]);
+  }, [selectedFiles]);
 
   const formatBytes = (bytes) => {
-    if (bytes === 0) {
-      return "0 B";
-    }
-
+    if (bytes === 0) return "0 B";
     const sizes = ["B", "KB", "MB", "GB", "TB"];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    const formattedBytes = parseFloat((bytes / Math.pow(1024, i)).toFixed(1));
+    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+  };
 
-    return `${formattedBytes} ${sizes[i]}`;
+  const downloadFiles = () => {
+    if (selectedFiles.length === 1) {
+      const file = selectedFiles[0];
+      const link = document.createElement("a");
+      link.href = file.download_link;
+      link.download = file.label;
+      link.click();
+      link.remove();
+    } else if (selectedFiles.length > 1) {
+      const links = selectedFiles.map((file) => file.download_link);
+      setDownloadLinks(links);
+      openPopup();
+    }
   };
 
   return (
@@ -115,23 +85,20 @@ const Download = ({openPopup, selectedRunData, selectedRun, goBack}) => {
         <div className="download-selects">
           <Select
             className="download-select-box"
-            placeholder="Data Types"
-            isMulti={true}
+            placeholder="Select Data Type"
             options={availableDataTypes}
-            value={selectedDataTypes}
+            value={selectedDataType}
+            onChange={setSelectedDataType}
             isDisabled={availableDataTypes.length === 0}
-            onChange={(e) => setSelectedDataTypes(e)}
-          ></Select>
-          <MultiSelect
+          />
+          <Select
             className="download-select-box"
-            options={availableEvents}
-            isDisabled={availableEvents.length === 0}
-            value={selectedEvents}
-            onChange={(e) => setSelectedEvents(e)}
-            overrideStrings={{
-              "allItemsAreSelected": "All events",
-              "selectSomeItems": "Select Events"
-            }}
+            placeholder="Select Files"
+            options={availableFiles}
+            value={selectedFiles}
+            onChange={setSelectedFiles}
+            isMulti={true}
+            isDisabled={availableFiles.length === 0}
           />
         </div>
         <p>Selected total file size: {formatBytes(selectedTotalSize)}</p>
@@ -154,12 +121,11 @@ const Download = ({openPopup, selectedRunData, selectedRun, goBack}) => {
             >
               Show Download Instructions
             </Button>
-
             <textarea
               ref={textAreaRef}
               value={downloadLinks.join("\n")}
               readOnly
-              style={{position: "absolute", left: "-9999px"}}
+              style={{ position: "absolute", left: "-9999px" }}
             />
           </div>
         )}

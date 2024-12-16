@@ -1,5 +1,5 @@
 .run-card{
-    width: 31%;
+    width: 30%;
     height: 100%;
     border-radius: 10px;
     box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.2);
@@ -43,7 +43,7 @@
 }
 
 .run-card-title{
-    font-size: 1.5rem !important;
+    font-size: 1.2rem !important;
     font-weight: 600;
     margin-bottom: 0.5rem !important;
     text-align: center;
@@ -52,6 +52,7 @@
 
 .run-card-sub-title{
   font-weight: 600;
+  font-size: 1rem !important;
   margin-bottom: 1rem !important;
   text-align: center;
   width: 50%;

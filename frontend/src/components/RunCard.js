@@ -4,7 +4,7 @@ import { Card } from "react-bootstrap";
 
 import "assets/RunCard.css";
 
-const RunCard = ({ key, runData, setRun, runName, active }) => {
+const RunCard = ({ key_x, runData, setRun, runName, active }) => {
 
   const handleClick = () => {
     // Sets the select run in the Form component
@@ -15,20 +15,24 @@ const RunCard = ({ key, runData, setRun, runName, active }) => {
   return (
     <Card className={'run-card ' +  (active ? "run-card-active" : "run-card")} onClick={handleClick}>
       <Card.Body className="run-card-body">
-        <Card.Title className="run-card-title">{runData["card_info"]["run_type"]}</Card.Title>
+        <Card.Title className="run-card-title">{runData["type"]}</Card.Title>
         <Card.Title className="run-card-sub-title">{runName}</Card.Title>
-          <Card.Text className="run-card-info-text">
-            <b>Number of Events:</b>{" "}
-            {runData["card_info"]["n_events"]}
-            <br />
-            <b>Region:</b> {runData["card_info"]["region"]}
-            <br />
-            <b>Grid Spacing:</b>{" "}
-            {runData["card_info"]["grid_spacing"]}
-            <br />
-            <b>Tectonic Types:</b>{" "}
-            {runData["card_info"]["tectonic_types"].join(", ")}
-          </Card.Text>
+        <Card.Text className="run-card-info-text">
+  <span>
+    <b>Author:</b> {runData["author"]}
+  </span>
+          <br />
+          {runData?.display_metadata
+            ? Object.entries(runData["display_metadata"]).map(([key, value]) => (
+              <span key={key}>
+        <b>{key.replace(/_/g, " ")}:</b>{" "}
+                {Array.isArray(value) ? value.join(", ") : value}
+                <br />
+      </span>
+            ))
+            : <span>No metadata available</span>}
+        </Card.Text>
+
       </Card.Body>
     </Card>
   );

@@ -3,28 +3,24 @@ import Select from "react-select";
 
 import {Runs} from "components";
 import * as CONSTANTS from "Constants";
-import Alert from '@mui/material/Alert';
 
 import "assets/Form.css";
 import "assets/Popup.css";
 import {Button} from "react-bootstrap";
-import {APIQueryBuilder} from "./Utils";
 
-const Form = ({interests, setDataset, goBack}) => {
+const Form = ({setDataset, goBack}) => {
   // Filters
-  const [availableGridSpacings, setAvailableGridSpacings] = useState([]);
-  const [selectedGridSpacings, setSelectedGridSpacings] = useState([]);
-  const [availableRunTypes, setAvailableRunTypes] = useState([]);
-  const [selectedRunTypes, setSelectedRunType] = useState([]);
-  const [availableTectonicTypes, setAvailableTectonicTypes] = useState([]);
-  const [selectedTectonicTypes, setSelectedTectonicTypes] = useState([]);
-  const [siteOrSourceText, setSiteOrSourceText] = useState("");
+  const [datasetTypes, setDatasetTypes] = useState([]);
+  const [selectedDatasets, setSelectedDatasets] = useState([]);
+  const [uniqueEvents, setUniqueEvents] = useState([]);
+  const [selectedUniqueSites, setSelectedUniqueSites] = useState([]);
+  const [uniqueSites, setUniqueSites] = useState([]);
+  const [selectedUniqueEvents, setSelectedUniqueEvents] = useState([]);
 
   // Filter Runs
-  const [interestRuns, setInterestRuns] = useState(null);
-  const [GridSpacingRuns, setGridSpacingRuns] = useState(null);
-  const [RunTypeRuns, setRunTypeRuns] = useState(null);
-  const [TectonicTypeRuns, setTectonicTypeRuns] = useState(null);
+  const [datasetTypeRuns, setDatasetTypeRuns] = useState(null);
+  const [eventRuns, setEventRuns] = useState(null);
+  const [siteRuns, setSiteRuns] = useState(null);
 
   // Runs
   const [availableRuns, setAvailableRuns] = useState([]);
@@ -34,91 +30,86 @@ const Form = ({interests, setDataset, goBack}) => {
   const [runDataLookup, setRunDataLookup] = useState({});
   const [selectedRunData, setSelectedRunData] = useState([]);
 
-  // Get Grid Spacing filter on page load
+  // Get Dataset Types filter on page load
   useEffect(() => {
-    if (availableGridSpacings.length === 0) {
-      fetch(CONSTANTS.CS_API_URL + CONSTANTS.GET_GRID_SPACING_ENDPOINT, {
+    if (datasetTypes.length === 0) {
+      fetch(CONSTANTS.CS_API_URL + CONSTANTS.GET_DATASET_TYPES_ENDPOINT, {
         method: "GET",
       }).then(async (response) => {
         const responseData = await response.json();
-        // Set Available Grid Spacing Select Dropdown
+        // Set Available Dataset Types Select Dropdown
         let tempOptionArray = [];
         for (const value of Object.values(responseData)) {
           tempOptionArray.push({value: value, label: value});
         }
-        setAvailableGridSpacings(tempOptionArray);
+        setDatasetTypes(tempOptionArray);
       });
     }
-  }, [availableGridSpacings]);
+  }, [datasetTypes]);
 
-  // Get Run Type filter on page load
+  // Get Unique Events filter on page load
   useEffect(() => {
-    if (availableRunTypes.length === 0) {
-      fetch(CONSTANTS.CS_API_URL + CONSTANTS.GET_RUN_TYPES_ENDPOINT, {
+    if (uniqueEvents.length === 0) {
+      fetch(CONSTANTS.CS_API_URL + CONSTANTS.GET_UNIQUE_EVENTS_ENDPOINT, {
         method: "GET",
       }).then(async (response) => {
         const responseData = await response.json();
-        // Set Available Run Types for the Select Dropdown
+        // Set Unique Events for the Select Dropdown
         let tempOptionArray = [];
         for (const value of Object.values(responseData)) {
           tempOptionArray.push({value: value, label: value});
         }
-        setAvailableRunTypes(tempOptionArray);
+        setUniqueEvents(tempOptionArray);
       });
     }
-  }, [availableRunTypes]);
+  }, [uniqueEvents]);
 
-  // Get Tectonic Types filter on page load
+  // Get Unique Sites filter on page load
   useEffect(() => {
-    if (availableTectonicTypes.length === 0) {
-      fetch(CONSTANTS.CS_API_URL + CONSTANTS.GET_TECTONIC_TYPES_ENDPOINT, {
+    if (uniqueSites.length === 0) {
+      fetch(CONSTANTS.CS_API_URL + CONSTANTS.GET_UNIQUE_SITES_ENDPOINT, {
         method: "GET",
       }).then(async (response) => {
         const responseData = await response.json();
-        // Set Available Tectonic Types Select Dropdown
+        // Set Unique Sites Select Dropdown
         let tempOptionArray = [];
         for (const value of Object.values(responseData)) {
           tempOptionArray.push({value: value, label: value});
         }
-        setAvailableTectonicTypes(tempOptionArray);
+        setUniqueSites(tempOptionArray);
       });
     }
-  }, [availableTectonicTypes]);
+  }, [uniqueSites]);
 
   // Function to apply every filter to the available runs to set the shown runs
   useEffect(() => {
     // Add every set together, if null ignore
     let tempShownRuns = availableRuns;
-    if (interestRuns !== null) {
-      tempShownRuns = interestRuns.filter(interestRun =>
-        tempShownRuns.some(tempShownRun => interestRun.value === tempShownRun.value)
+    if (datasetTypeRuns !== null) {
+      tempShownRuns = datasetTypeRuns.filter(datasetTypeRun =>
+        tempShownRuns.some(tempShownRun => datasetTypeRun.value === tempShownRun.value)
       );
     }
-    if (GridSpacingRuns !== null) {
-      tempShownRuns = GridSpacingRuns.filter(gridSpacingRun =>
-        tempShownRuns.some(tempShownRun => gridSpacingRun.value === tempShownRun.value)
+    if (eventRuns !== null) {
+      tempShownRuns = eventRuns.filter(eventRun =>
+        tempShownRuns.some(tempShownRun => eventRun.value === tempShownRun.value)
       );
     }
-    if (RunTypeRuns !== null) {
-      tempShownRuns = RunTypeRuns.filter(runTypeRun =>
-        tempShownRuns.some(tempShownRun => runTypeRun.value === tempShownRun.value)
-      );
-    }
-    if (TectonicTypeRuns !== null) {
-      tempShownRuns = TectonicTypeRuns.filter(tectonicTypeRun =>
-        tempShownRuns.some(tempShownRun => tectonicTypeRun.value === tempShownRun.value)
+    if (siteRuns !== null) {
+      tempShownRuns = siteRuns.filter(siteRun =>
+        tempShownRuns.some(tempShownRun => siteRun.value === tempShownRun.value)
       );
     }
     setShownRuns(tempShownRuns);
-  }, [availableRuns, interestRuns, GridSpacingRuns, RunTypeRuns, TectonicTypeRuns]);
+  }, [availableRuns, datasetTypeRuns, eventRuns, siteRuns]);
 
-  // Set GridSpacingRuns when the Grid Spacing filter is changed
+  // Set datasetTypeRuns when the Grid Spacing filter is changed
   useEffect(() => {
-    if (selectedGridSpacings.length > 0) {
+    if (selectedDatasets.length > 0) {
       let tempRunDataLookup = runDataLookup;
-      const gridSpacings = selectedGridSpacings.map((spacing) => spacing.value);
+      const gridSpacings = selectedDatasets.map((spacing) => spacing.value);
       const tempShownRuns = Object.keys(tempRunDataLookup).reduce((acc, run_name) => {
-        if (gridSpacings.includes(tempRunDataLookup[run_name]["card_info"]["grid_spacing"])) {
+        if (gridSpacings.includes(tempRunDataLookup[run_name]["type"])) {
           acc.push({
             key: run_name,
             value: run_name,
@@ -126,41 +117,21 @@ const Form = ({interests, setDataset, goBack}) => {
         }
         return acc;
       }, []);
-      setGridSpacingRuns(tempShownRuns);
+      setDatasetTypeRuns(tempShownRuns);
     } else {
-      setGridSpacingRuns(null);
+      setDatasetTypeRuns(null);
     }
-  }, [runDataLookup, selectedGridSpacings]);
+  }, [runDataLookup, selectedDatasets]);
 
-  // Set RunTypeRuns when the Run Type filter is changed
+  // Set eventRuns when the Run Type filter is changed
   useEffect(() => {
-    if (selectedRunTypes.length > 0) {
+    if (selectedUniqueEvents.length > 0) {
       let tempRunDataLookup = runDataLookup;
-      const runTypes = selectedRunTypes.map((runType) => runType.value);
-      const tempShownRuns = Object.keys(tempRunDataLookup).reduce((acc, run_name) => {
-        if (runTypes.includes(tempRunDataLookup[run_name]["card_info"]["run_type"])) {
-          acc.push({
-            key: run_name,
-            value: run_name,
-          });
-        }
-        return acc;
-      }, []);
-      setRunTypeRuns(tempShownRuns);
-    } else {
-      setRunTypeRuns(null);
-    }
-  }, [runDataLookup, selectedRunTypes]);
-
-  // Set TectonicTypeRuns when the Tectonic Type filter is changed
-  useEffect(() => {
-    if (selectedTectonicTypes.length > 0) {
-      let tempRunDataLookup = runDataLookup;
-      const tectonicTypes = selectedTectonicTypes.map((tectonicType) => tectonicType.value);
+      const events = selectedUniqueEvents.map((runType) => runType.value);
       const tempShownRuns = Object.keys(tempRunDataLookup).reduce((acc, run_name) => {
         // Loop over each tectonic type in the run
-        for (const tectonicType of tempRunDataLookup[run_name]["card_info"]["tectonic_types"]) {
-          if (tectonicTypes.includes(tectonicType)) {
+        for (const event of tempRunDataLookup[run_name]["events"]) {
+          if (events.includes(event["name"])) {
             acc.push({
               key: run_name,
               value: run_name,
@@ -170,84 +141,55 @@ const Form = ({interests, setDataset, goBack}) => {
         }
         return acc;
       }, []);
-      setTectonicTypeRuns(tempShownRuns);
+      setEventRuns(tempShownRuns);
     } else {
-      setTectonicTypeRuns(null);
+      setEventRuns(null);
     }
-  }, [runDataLookup, selectedTectonicTypes]);
+  }, [runDataLookup, selectedUniqueEvents]);
+
+  // Set siteRuns when the Sites filter is changed
+  useEffect(() => {
+    if (selectedUniqueSites.length > 0) {
+      let tempRunDataLookup = runDataLookup;
+      const sites = selectedUniqueSites.map((site) => site.value);
+      const tempShownRuns = Object.keys(tempRunDataLookup).reduce((acc, run_name) => {
+        // Loop over each tectonic type in the run
+        for (const site of tempRunDataLookup[run_name]["sites"]) {
+          if (sites.includes(site["name"])) {
+            acc.push({
+              key: run_name,
+              value: run_name,
+            });
+            break;
+          }
+        }
+        return acc;
+      }, []);
+      setSiteRuns(tempShownRuns);
+    } else {
+      setSiteRuns(null);
+    }
+  }, [runDataLookup, selectedUniqueSites]);
 
   // Get Available Runs on page load
   useEffect(() => {
     if (Object.keys(runData).length === 0) {
       // Get the run data for all the runs
-      fetch(CONSTANTS.CS_API_URL + CONSTANTS.GET_RUNS_INFO_ENDPOINT, {
+      fetch(CONSTANTS.CS_API_URL + CONSTANTS.GET_DATASETS_INFO_ENDPOINT, {
         method: "GET",
       }).then(async (response) => {
         const responseData = await response.json();
         setRunData(responseData);
-        const runDataLookupTemp = responseData.reduce((lookup, run) => {
-          lookup[Object.keys(run)[0]] = Object.values(run)[0];
-          return lookup;
-        }, {});
-        setRunDataLookup(runDataLookupTemp);
+        setRunDataLookup(responseData);
         // Set Available Runs Array
-        let tempOptionArray = [];
-        for (const run_dict of Object.values(responseData)) {
-          const value = Object.keys(run_dict)[0];
-          tempOptionArray.push({value: value, label: value});
-        }
+        let tempOptionArray = Object.keys(responseData).map((key) => ({
+          value: key,
+          label: key,
+        }));
         setAvailableRuns(tempOptionArray);
       });
     }
   }, [runData]);
-
-  // Set the Interests text based on the interests selected
-  useEffect(() => {
-    // Find if the interests are Sites or sources
-    let tmpSiteOrSourceText = "";
-    let filterBy = "";
-    let filteredList = [];
-    if (interests[0]["sites"].length > 0) {
-      tmpSiteOrSourceText = "Filtered by Sites of Interest (";
-      for (const site of interests[0]["sites"]) {
-        tmpSiteOrSourceText += site["value"] + ", ";
-        filteredList.push(site["value"]);
-      }
-      tmpSiteOrSourceText += ")";
-      filterBy = "sites";
-    } else if (interests[1]["sources"].length > 0) {
-      tmpSiteOrSourceText = "Filtered by Sources of Interest (";
-      for (const source of interests[1]["sources"]) {
-        tmpSiteOrSourceText += source["value"] + ", ";
-        filteredList.push(source["value"]);
-      }
-      tmpSiteOrSourceText += ")";
-      filterBy = "sources";
-    } else {
-      // There is no Interests
-      tmpSiteOrSourceText = null;
-    }
-    setSiteOrSourceText(tmpSiteOrSourceText);
-    if (tmpSiteOrSourceText !== null) {
-      let queryString = APIQueryBuilder({
-        filter_by: filterBy,
-        filter_list: filteredList,
-      });
-
-      // Send a request to the API to get the runs that match the interests
-      fetch(CONSTANTS.CS_API_URL + CONSTANTS.GET_RUNS_FROM_INTERESTS_ENDPOINT + queryString, {
-        method: "GET",
-      }).then(async (response) => {
-        const responseData = await response.json();
-        // Set Shown Runs Array
-        let tempOptionArray = [];
-        for (const value of Object.values(responseData)) {
-          tempOptionArray.push({value: value, label: value});
-        }
-        setInterestRuns(tempOptionArray);
-      });
-    }
-  }, [interests]);
 
   // Change the download options when a run is selected
   useEffect(() => {
@@ -269,56 +211,39 @@ const Form = ({interests, setDataset, goBack}) => {
     setDataset(selectedRun, selectedRunData);
   }
 
-  const removeInterestFilter = () => {
-    setInterestRuns(null);
-    setSiteOrSourceText(null);
-  }
-
   return (
     <div className="border section">
       <div className="sub-section">
-        {siteOrSourceText !== null && <Alert
-          severity="info"
-          action={
-            <Button variant="secondary"
-                    size="sm" onClick={removeInterestFilter}>
-              Remove Filter
-            </Button>
-          }
-        >
-          {siteOrSourceText}
-        </Alert>
-        }
         <div className="form-label">Filters</div>
         <div className="row three-column-row">
           <div className="col-4">
             <Select
               className="select-box"
-              placeholder="Grid Spacing"
+              placeholder="Dataset Types"
               isMulti={true}
-              options={availableGridSpacings}
-              isDisabled={availableGridSpacings.length === 0}
-              onChange={(e) => setSelectedGridSpacings(e)}
+              options={datasetTypes}
+              isDisabled={datasetTypes.length === 0}
+              onChange={(e) => setSelectedDatasets(e)}
             ></Select>
           </div>
           <div className="col-4">
             <Select
               className="select-box"
-              placeholder="Run Type"
+              placeholder="Events"
               isMulti={true}
-              options={availableRunTypes}
-              isDisabled={availableRunTypes.length === 0}
-              onChange={(e) => setSelectedRunType(e)}
+              options={uniqueEvents}
+              isDisabled={uniqueEvents.length === 0}
+              onChange={(e) => setSelectedUniqueEvents(e)}
             ></Select>
           </div>
           <div className="col-4">
             <Select
               className="select-box"
-              placeholder="Tectonic Types"
+              placeholder="Sites"
               isMulti={true}
-              options={availableTectonicTypes}
-              isDisabled={availableTectonicTypes.length === 0}
-              onChange={(e) => setSelectedTectonicTypes(e)}
+              options={uniqueSites}
+              isDisabled={uniqueSites.length === 0}
+              onChange={(e) => setSelectedUniqueSites(e)}
             ></Select>
           </div>
         </div>
@@ -339,16 +264,6 @@ const Form = ({interests, setDataset, goBack}) => {
           onClick={selectDataset}
         >
           Select Dataset
-        </Button>
-      </div>
-      <div className="nav-section">
-        <Button
-          variant="secondary"
-          size="sm"
-          className="back-button"
-          onClick={goBack}
-        >
-          Back
         </Button>
       </div>
 

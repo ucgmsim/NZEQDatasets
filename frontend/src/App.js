@@ -1,10 +1,6 @@
 import React, {useState} from "react";
 
-import {Form, InstallCard, Map, Interests, Download, AddRun} from "components";
-
-import Stepper from '@mui/material/Stepper';
-import Step from '@mui/material/Step';
-import StepButton from '@mui/material/StepButton';
+import {Form, InstallCard, Map, Download, AddRun} from "components";
 
 import "assets/App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -13,15 +9,10 @@ import {Button} from "react-bootstrap";
 function App() {
 
   const [showDownloadPopup, setShowDownloadPopup] = useState(false);
-  const [interests, setInterests] = useState([]);
-  const [selectedRun, setSelectedRun] = useState([]);
   const [selectedRunData, setSelectedRunData] = useState([]);
-  const [activeStep, setActiveStep] = React.useState(0);
-  const [completed, setCompleted] = React.useState({});
   const [showAdd, setShowAdd] = useState(false);
+  const [showDownloadPage, setShowDownloadPage] = useState(false);
   const [addRunButtonText, setAddRunButtonText] = useState("Add Run");
-
-  const steps = ['Interests', 'Select Dataset', 'Download Data'];
 
   const onCloseDownloadPopup = () => {
     setShowDownloadPopup(false);
@@ -31,29 +22,9 @@ function App() {
     setShowDownloadPopup(true);
   };
 
-  const setInterest = (sites, sources) => {
-    setInterests([{"sites": sites}, {"sources": sources}]);
-    setCompleted({0: true});
-    setActiveStep(1);
-  }
-
   const setDataset = (selectedRun, selectedRunData) => {
-    setSelectedRun(selectedRun);
     setSelectedRunData(selectedRunData);
-    if (selectedRun.length > 0) {
-      setCompleted({0: true, 1: true});
-      setActiveStep(2);
-    }
-  }
-
-  const goBack = () => {
-    setActiveStep(0);
-    setCompleted({0: false, 1: false});
-  }
-
-  const goForm = () => {
-    setActiveStep(1);
-    setCompleted({0: true, 1: false, 2: false})
+    setShowDownloadPage(true);
   }
 
   const setShowAddForm = () => {
@@ -66,12 +37,17 @@ function App() {
     }
   }
 
+  const returnToDatasets = () => {
+    setShowDownloadPage(false);
+    setSelectedRunData([]);
+  }
+
   return (
     <div>
       <div className="App d-flex flex-column h-100">
         <div className="row two-column-row">
           <div className="col-7 left-side-title">
-            <div className="title">Simulation Data</div>
+            <div className="title">NZEQ Datasets</div>
           </div>
           <div className="col-5 right-side-title">
             <Button
@@ -87,21 +63,10 @@ function App() {
         {!showAdd &&
           <div className="row two-column-row">
             <div className="col-7 h-100">
-              <Stepper className={"stepper"} nonLinear activeStep={activeStep}>
-                {steps.map((label, index) => (
-                  <Step key={label} completed={completed[index]}>
-                    <StepButton color="inherit" disabled={true}>
-                      {label}
-                    </StepButton>
-                  </Step>
-                ))}
-              </Stepper>
-              {activeStep === 0 && <Interests setInterest={setInterest}/>}
-              {activeStep === 1 && <Form interests={interests} setDataset={setDataset} goBack={goBack}/>}
-              {activeStep === 2 &&
+              {!showDownloadPage && <Form setDataset={setDataset}/>}
+              {showDownloadPage &&
                 <Download openPopup={handleShowDownloadPopup} selectedRunData={selectedRunData}
-                          selectedRun={selectedRun}
-                          goBack={goForm}/>}
+                          goBack={returnToDatasets}/>}
             </div>
             <div className="col-5 h-100">
               <Map/>
